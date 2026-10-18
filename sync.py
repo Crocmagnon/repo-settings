@@ -41,7 +41,24 @@ def owned_repos(token):
 
 
 def diff(current, wanted):
-    return {k: v for k, v in wanted.items() if current.get(k) != v}
+    changes = {}
+    for k, v in wanted.items():
+        if isinstance(v, dict):
+            # A nested object is absent where the feature is unavailable, e.g.
+            # security_and_analysis on private repos: skip it rather than report drift forever.
+            if k in current and (sub := diff(current[k] or {}, v)):
+                changes[k] = sub
+        elif current.get(k) != v:
+            changes[k] = v
+    return changes
+
+
+def flat(d, prefix=""):
+    for k, v in d.items():
+        if isinstance(v, dict):
+            yield from flat(v, f"{prefix}{k}.")
+        else:
+            yield f"{prefix}{k}", v
 
 
 def main():
@@ -59,8 +76,9 @@ def main():
         repo, _ = request("GET", f"{API}/repos/{name}", token)
         if changes := diff(repo, wanted):
             plan[name] = changes
-            for k, v in changes.items():
-                print(f"{name}: {k} {json.dumps(repo.get(k))} → {json.dumps(v)}")
+            current = dict(flat(repo))
+            for k, v in flat(changes):
+                print(f"{name}: {k} {json.dumps(current.get(k))} → {json.dumps(v)}")
 
     if not plan:
         print("No drift.")

@@ -23,7 +23,15 @@ repositories with *Administration: Read and write*. Renew it when it expires.
 3. Read the plan, then run **Apply settings**.
 
 Only fields that the same API returns when reading a repository can be checked; a field it never
-returns shows up as drift on every run.
+returns shows up as drift on every run. Nested objects such as `security_and_analysis` only list
+the keys to enforce; when the API omits the whole object (it does for `security_and_analysis` on
+private repositories, where the features are unavailable), the repository is skipped for it.
+
+## Deliberately unmanaged
+
+- `has_wiki`: some repositories publish their coverage badge to the wiki
+  (`ncruces/go-coverage-report`), so it cannot be turned off everywhere.
+- Dependabot: Renovate is used instead, enabled per repository on purpose.
 
 ## No exclusion list
 
