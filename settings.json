@@ -22,9 +22,5 @@
   },
   "private-vulnerability-reporting": true,
   "vulnerability-alerts": false,
-  "overrides": {
-    "Crocmagnon/nixos-config": {
-      "actions/permissions/workflow": {"can_approve_pull_request_reviews": true}
-    }
-  }
+  "overrides": {}
 }

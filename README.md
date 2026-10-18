@@ -55,7 +55,7 @@ merged into the common settings, key by key:
 
 ```json
 "overrides": {
-  "Crocmagnon/nixos-config": {
+  "Crocmagnon/some-repo": {
     "actions/permissions/workflow": {"can_approve_pull_request_reviews": true}
   }
 }
