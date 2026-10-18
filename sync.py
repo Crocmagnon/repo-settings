@@ -15,7 +15,7 @@ API = "https://api.github.com"
 PUBLIC_ONLY = {"allow_auto_merge"}
 
 
-def request(method, url, token, body=None):
+def request(method, url, token, body=None, missing=False):
     req = urllib.request.Request(
         url,
         method=method,
@@ -30,8 +30,11 @@ def request(method, url, token, body=None):
         with urllib.request.urlopen(req) as resp:
             link = resp.headers.get("Link", "")
             next_url = re.search(r'<([^>]+)>;\s*rel="next"', link)
-            return json.load(resp), next_url and next_url.group(1)
+            raw = resp.read()
+            return json.loads(raw) if raw else {}, next_url and next_url.group(1)
     except urllib.error.HTTPError as e:
+        if missing and e.code == 404:
+            return None, None
         sys.exit(f"{method} {url} failed: {e.code} {e.read().decode()}")
 
 
@@ -72,16 +75,34 @@ def main():
     token = os.environ.get("GITHUB_TOKEN") or sys.exit("GITHUB_TOKEN is not set")
     wanted = json.loads((Path(__file__).parent / "settings.json").read_text())
 
-    # The list endpoint omits fields like delete_branch_on_merge, so fetch each repo.
     plan = {}
     for name in owned_repos(token):
-        repo, _ = request("GET", f"{API}/repos/{name}", token)
-        applicable = {k: v for k, v in wanted.items() if not (repo["private"] and k in PUBLIC_ONLY)}
-        if changes := diff(repo, applicable):
-            plan[name] = changes
-            current = dict(flat(repo))
-            for k, v in flat(changes):
-                print(f"{name}: {k} {json.dumps(current.get(k))} → {json.dumps(v)}")
+        url = f"{API}/repos/{name}"
+        # The list endpoint omits fields like delete_branch_on_merge, so fetch each repo.
+        repo, _ = request("GET", url, token)
+        calls = []
+        for path, want in wanted.items():
+            if path == "repo":
+                want = {k: v for k, v in want.items() if not (repo["private"] and k in PUBLIC_ONLY)}
+                current, method, target, prefix = repo, "PATCH", url, ""
+            elif isinstance(want, bool):
+                # A toggle answers 204/404 (vulnerability-alerts) or {"enabled": bool}.
+                found, _ = request("GET", f"{url}/{path}", token, missing=True)
+                enabled = found is not None and found.get("enabled", True)
+                if enabled != want:
+                    print(f"{name}: {path} {json.dumps(enabled)} → {json.dumps(want)}")
+                    calls.append(("PUT" if want else "DELETE", f"{url}/{path}", {}))
+                continue
+            else:
+                current, _ = request("GET", f"{url}/{path}", token)
+                method, target, prefix = "PUT", f"{url}/{path}", f"{path}."
+            if changes := diff(current, want):
+                flat_current = dict(flat(current))
+                for k, v in flat(changes):
+                    print(f"{name}: {prefix}{k} {json.dumps(flat_current.get(k))} → {json.dumps(v)}")
+                calls.append((method, target, changes))
+        if calls:
+            plan[name] = calls
 
     if not plan:
         print("No drift.")
@@ -90,8 +111,9 @@ def main():
         sys.exit(1)
     if not args.yes and input(f"Apply to {len(plan)} repos? [y/N] ").lower() != "y":
         sys.exit("Aborted.")
-    for name, changes in plan.items():
-        request("PATCH", f"{API}/repos/{name}", token, changes)
+    for name, calls in plan.items():
+        for method, target, body in calls:
+            request(method, target, token, body)
         print(f"{name}: updated")
 
 

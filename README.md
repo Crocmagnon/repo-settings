@@ -16,22 +16,36 @@ repositories with *Administration: Read and write*. Renew it when it expires.
 
 ## Add a setting
 
-1. Add a line to `settings.json`, using the field name and value of the
-   [update a repository](https://docs.github.com/en/rest/repos/repos#update-a-repository) API,
-   e.g. `"has_wiki": false`.
+Each top-level key of `settings.json` is a path under `/repos/{owner}/{repo}` of the GitHub API:
+
+- `"repo"`: fields of [update a repository](https://docs.github.com/en/rest/repos/repos#update-a-repository),
+  read with `GET` and written with `PATCH`, e.g. `"has_wiki": false`.
+- Another key with an object, e.g. `"actions/permissions/workflow"`: read with `GET`, written
+  with `PUT`.
+- Another key with a boolean, e.g. `"vulnerability-alerts"`: an on/off feature, enabled with
+  `PUT` and disabled with `DELETE`. Its state is read from `GET`, which answers either 204/404 or
+  `{"enabled": …}`.
+
+Then:
+
+1. Add the setting to `settings.json`.
 2. Push to `main`. Check drift runs and lists every repository it would change.
 3. Read the plan, then run **Apply settings**.
 
-Only fields that the same API returns when reading a repository can be checked; a field it never
-returns shows up as drift on every run. Nested objects such as `security_and_analysis` only list
-the keys to enforce; when the API omits the whole object (it does for `security_and_analysis` on
-private repositories, where the features are unavailable), the repository is skipped for it.
-Top-level settings that private repositories cannot use on GitHub Free, which the API ignores
-without error, go in `PUBLIC_ONLY` in `sync.py` (e.g. `allow_auto_merge`).
+The `SETTINGS_TOKEN` must carry the permission each endpoint asks for; all current ones need
+*Administration*.
 
-## Deliberately unmanaged
+Only fields that the API returns when reading can be checked; a field it never returns shows up as
+drift on every run. Nested objects such as `security_and_analysis` only list the keys to enforce;
+when the API omits the whole object (it does for `security_and_analysis` on private repositories,
+where the features are unavailable), the repository is skipped for it. `"repo"` fields that
+private repositories cannot use on GitHub Free, which the API ignores without error, go in
+`PUBLIC_ONLY` in `sync.py` (e.g. `allow_auto_merge`).
 
-- Dependabot: Renovate is used instead, enabled per repository on purpose.
+## Dependabot
+
+Not used: Renovate is enabled per repository instead, on purpose. Dependabot alerts are disabled
+(`vulnerability-alerts`) to avoid notifications, and security updates are left off.
 
 ## No exclusion list
 

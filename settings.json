@@ -1,16 +1,25 @@
 {
-  "delete_branch_on_merge": true,
-  "allow_squash_merge": true,
-  "allow_merge_commit": false,
-  "allow_rebase_merge": false,
-  "squash_merge_commit_title": "PR_TITLE",
-  "squash_merge_commit_message": "PR_BODY",
-  "allow_auto_merge": true,
-  "allow_update_branch": true,
-  "has_projects": false,
-  "has_wiki": false,
-  "security_and_analysis": {
-    "secret_scanning": {"status": "enabled"},
-    "secret_scanning_push_protection": {"status": "enabled"}
-  }
+  "repo": {
+    "delete_branch_on_merge": true,
+    "allow_squash_merge": true,
+    "allow_merge_commit": false,
+    "allow_rebase_merge": false,
+    "squash_merge_commit_title": "PR_TITLE",
+    "squash_merge_commit_message": "PR_BODY",
+    "allow_auto_merge": true,
+    "allow_update_branch": true,
+    "has_projects": false,
+    "has_wiki": false,
+    "has_discussions": false,
+    "security_and_analysis": {
+      "secret_scanning": {"status": "enabled"},
+      "secret_scanning_push_protection": {"status": "enabled"}
+    }
+  },
+  "actions/permissions/workflow": {
+    "default_workflow_permissions": "read",
+    "can_approve_pull_request_reviews": false
+  },
+  "private-vulnerability-reporting": true,
+  "vulnerability-alerts": false
 }
