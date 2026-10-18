@@ -29,8 +29,6 @@ private repositories, where the features are unavailable), the repository is ski
 
 ## Deliberately unmanaged
 
-- `has_wiki`: some repositories publish their coverage badge to the wiki
-  (`ncruces/go-coverage-report`), so it cannot be turned off everywhere.
 - Dependabot: Renovate is used instead, enabled per repository on purpose.
 
 ## No exclusion list
