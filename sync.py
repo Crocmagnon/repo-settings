@@ -11,6 +11,8 @@ import urllib.request
 from pathlib import Path
 
 API = "https://api.github.com"
+# Unavailable on private repos with GitHub Free: the API silently ignores them there.
+PUBLIC_ONLY = {"allow_auto_merge"}
 
 
 def request(method, url, token, body=None):
@@ -74,7 +76,8 @@ def main():
     plan = {}
     for name in owned_repos(token):
         repo, _ = request("GET", f"{API}/repos/{name}", token)
-        if changes := diff(repo, wanted):
+        applicable = {k: v for k, v in wanted.items() if not (repo["private"] and k in PUBLIC_ONLY)}
+        if changes := diff(repo, applicable):
             plan[name] = changes
             current = dict(flat(repo))
             for k, v in flat(changes):
