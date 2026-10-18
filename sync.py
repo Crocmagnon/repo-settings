@@ -58,6 +58,13 @@ def diff(current, wanted):
     return changes
 
 
+def merge(base, extra):
+    out = dict(base)
+    for k, v in extra.items():
+        out[k] = merge(out[k], v) if isinstance(v, dict) and isinstance(out.get(k), dict) else v
+    return out
+
+
 def flat(d, prefix=""):
     for k, v in d.items():
         if isinstance(v, dict):
@@ -73,7 +80,8 @@ def main():
     args = parser.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN") or sys.exit("GITHUB_TOKEN is not set")
-    wanted = json.loads((Path(__file__).parent / "settings.json").read_text())
+    settings = json.loads((Path(__file__).parent / "settings.json").read_text())
+    overrides = settings.pop("overrides", {})
 
     plan = {}
     for name in owned_repos(token):
@@ -81,7 +89,7 @@ def main():
         # The list endpoint omits fields like delete_branch_on_merge, so fetch each repo.
         repo, _ = request("GET", url, token)
         calls = []
-        for path, want in wanted.items():
+        for path, want in merge(settings, overrides.get(name, {})).items():
             if path == "repo":
                 want = {k: v for k, v in want.items() if not (repo["private"] and k in PUBLIC_ONLY)}
                 current, method, target, prefix = repo, "PATCH", url, ""
@@ -100,7 +108,8 @@ def main():
                 flat_current = dict(flat(current))
                 for k, v in flat(changes):
                     print(f"{name}: {prefix}{k} {json.dumps(flat_current.get(k))} → {json.dumps(v)}")
-                calls.append((method, target, changes))
+                # PUT replaces the whole object: send all wanted fields, not only the changed ones.
+                calls.append((method, target, changes if method == "PATCH" else want))
         if calls:
             plan[name] = calls
 

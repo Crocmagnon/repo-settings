@@ -47,11 +47,22 @@ private repositories cannot use on GitHub Free, which the API ignores without er
 Not used: Renovate is enabled per repository instead, on purpose. Dependabot alerts are disabled
 (`vulnerability-alerts`) to avoid notifications, and security updates are left off.
 
-## No exclusion list
+## Per-repository overrides
 
-Every setting applies to every non-archived owned repository, forks included. There is no way to
-exempt a repository yet: if one ever needs a different value, add an exclusion list to `sync.py`
-first.
+Every setting applies to every non-archived owned repository, forks included, unless
+`settings.json` overrides it under `"overrides"`, keyed by full repository name. An override is
+merged into the common settings, key by key:
+
+```json
+"overrides": {
+  "Crocmagnon/nixos-config": {
+    "actions/permissions/workflow": {"can_approve_pull_request_reviews": true}
+  }
+}
+```
+
+An overridden value is enforced like any other: if it changes on GitHub, Check drift reports it.
+There is no way to leave a setting unmanaged for one repository.
 
 ## Run locally
 

@@ -1,4 +1,4 @@
-from sync import diff, flat
+from sync import diff, flat, merge
 
 
 def test_diff():
@@ -22,8 +22,16 @@ def test_flat():
     assert dict(flat({"a": 1, "b": {"c": {"d": 2}}})) == {"a": 1, "b.c.d": 2}
 
 
+def test_merge():
+    base = {"repo": {"a": 1, "b": 2}, "wf": {"x": "read", "y": False}, "t": True}
+    extra = {"wf": {"y": True}, "t": False}
+    assert merge(base, extra) == {"repo": {"a": 1, "b": 2}, "wf": {"x": "read", "y": True}, "t": False}
+    assert base["wf"] == {"x": "read", "y": False}
+
+
 if __name__ == "__main__":
     test_diff()
     test_diff_nested()
     test_flat()
+    test_merge()
     print("ok")

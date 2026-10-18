@@ -7,4 +7,4 @@
 - Never run `sync.py` without `--dry-run` yourself: applying changes every repository of the
   account. The user applies through the Apply settings workflow.
 - When adding a setting, check its value in the dry-run plan before telling the user it is ready.
-- Settings apply to all repositories, forks included; there is no exclusion list (see README).
+- Settings apply to all repositories, forks included, except per-repository `overrides` (see README).
