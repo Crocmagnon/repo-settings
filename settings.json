@@ -22,5 +22,6 @@
   },
   "private-vulnerability-reporting": true,
   "vulnerability-alerts": false,
+  "immutable-releases": true,
   "overrides": {}
 }
